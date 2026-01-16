@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Halk Market Etiket Sistemi</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+  <style>
+    body{ font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif; background-color:#374151; -webkit-print-color-adjust: exact; margin:0; padding:0; }
+    .font-price{ font-weight:900; letter-spacing:-3px; }
+
+    @media print{
+      @page{ margin:0; size:auto; }
+      html, body{ margin:0 !important; padding:0 !important; background:#fff !important; color:#000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print{ display:none !important; }
+      #previewArea, .print-area{ background:#fff !important; padding:0 !important; margin:0 !important; overflow:visible !important; display:block !important; }
+      *, *:before, *:after{ box-shadow:none !important; text-shadow:none !important; filter:none !important; outline:none !important; }
+      .fold-area{ background:#fff !important; }
+      .multi-sheet{ box-shadow:none !important; background:#fff !important; }
+      .label-card, .strip-label{ box-shadow:none !important; background:transparent !important; margin:0 !important; }
+      .header-box, .content-box, .footer-info{ background:transparent !important; }
+      #previewArea{ background:transparent !important; }
+      html, body{ -webkit-print-color-adjust: economy !important; print-color-adjust: economy !important; }
+    }
+
+    .label-card{ background:white; margin:auto; position:relative; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); box-sizing:border-box; align-items:center; color:black; }
+    
+    .size-a4{ width:210mm; height:297mm; padding:10mm; }
+    .size-a5{ width:148mm; height:210mm; padding:5mm; }
+    .size-a5l{ width:210mm; height:148mm; padding:5mm; }
+    .size-a3{ width:297mm; height:420mm; padding:15mm; }
+    .size-shelf{ width:150mm; height:135mm; padding:0; }
+
+    .fold-area{ display:none; width:100%; height:35mm; background:#fff; border-bottom:2px dashed #000; align-items:center; justify-content:center; font-weight:bold; font-size:12px; flex-shrink:0; }
+    .size-shelf .fold-area{ display:flex; }
+
+    .header-box{ width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; border-bottom:4px solid #000; flex-shrink:0; text-align:center; overflow:hidden; padding:6px 10px; box-sizing:border-box; }
+    .content-box{ width:100%; flex:1; border:4px solid #000; border-radius:1.5rem; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:10px 0; position:relative; background:white; overflow:hidden; box-sizing:border-box; }
+
+    .price-row{ display:flex; align-items:flex-start; justify-content:center; line-height:0.75; }
+    .price-left{ font-weight:900; letter-spacing:-4px; }
+    .price-right{ display:flex; flex-direction:column; margin-left:10px; padding-top:12px; }
+    .kurus{ border-bottom:4px solid #000; margin-bottom:4px; line-height:1; }
+    .tl{ line-height:1; }
+
+    .footer-info{ width:100%; display:flex; justify-content:space-between; align-items:flex-end; margin-top:2px; padding-top:2px; border-top:2px solid #000; flex-shrink:0; gap:8px; box-sizing:border-box; }
+    .yerli-logo-box{ display:flex; align-items:center; border:2px solid black; border-radius:6px; padding:2px 6px; background:white; color:black; flex-shrink:0; }
+
+    .multi-sheet{ width:210mm; min-height:297mm; background:white; padding-top:5mm; display:flex; flex-direction:column; align-items:center; gap:5mm; box-shadow:0 0 15px rgba(0,0,0,0.5); margin:0 auto 20px auto; }
+    .strip-label{ width:200mm; height:92mm; border:2px solid #000; border-radius:10px; display:flex; box-sizing:border-box; overflow:hidden; background:white; }
+    .strip-left{ flex:0 0 60%; max-width:60%; min-width:0; padding:10px 12px; display:flex; flex-direction:column; justify-content:space-between; }
+    .strip-right{ flex:0 0 40%; max-width:40%; min-width:0; padding:10px 12px; display:flex; align-items:center; justify-content:center; }
+
+    .barcode-svg { display:block; width:100%; height:100%; }
+    .barcode-container { width: 100%; overflow: hidden; display: flex; justify-content: flex-end; }
+    
+    .btn-active{ background-color:white; color:black; border:2px solid white; }
+    .btn-passive{ background-color:#374151; color:#9ca3af; border:2px solid #4b5563; }
+
+    .size-shelf .header-box{ border-bottom-width:3px; padding:4px 6px; }
+    .size-shelf .content-box{ flex:0 0 auto !important; height:62mm !important; margin:3px 0 !important; border-width:3px; border-radius:16px; padding:6px !important; justify-content:flex-start !important; }
+    .size-shelf .footer-info{ margin-top:1mm !important; padding-top:2px !important; padding-bottom:2mm !important; align-items:center !important; }
+    .size-shelf .barcode-container { max-height: 40px; }
+
+    .clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  </style>
+</head>
+
+<body class="bg-gray-50">
+
+  <div class="flex h-screen overflow-hidden">
+    <div class="w-96 bg-gray-900 text-white flex flex-col z-50 no-print border-r border-gray-700 shadow-2xl">
+      <div class="p-6 bg-red-900 border-b border-gray-700">
+        <h1 class="text-2xl font-black italic">HALK MARKET</h1>
+        <p class="text-xs text-gray-200 mt-2">Bulut Etiket Sistemi</p>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-900">
+        
+        <div>
+          <label class="text-xs font-bold text-gray-500 mb-2 block uppercase">ÇALIŞMA MODU</label>
+          <div class="flex gap-2">
+            <button onclick="setMode('single')" id="btn-mode-single" class="flex-1 p-3 rounded font-bold border-2 bg-white text-black">TEKLİ BASIM</button>
+            <button onclick="setMode('multi')" id="btn-mode-multi" class="flex-1 p-3 rounded font-bold border-2 bg-gray-800 text-gray-400 border-gray-600">ÇOKLU A4 (3'lü)</button>
+          </div>
+        </div>
+
+        <div id="size-options">
+          <label class="text-xs font-bold text-gray-500 mb-2 block uppercase">Kağıt Boyutu</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="setSize('size-a4', this)" class="size-btn btn-active w-full py-2 rounded font-bold">A4</button>
+            <button onclick="setSize('size-a5', this)" class="size-btn btn-passive w-full py-2 rounded font-bold">A5 DİKEY</button>
+            <button onclick="setSize('size-a5l', this)" class="size-btn btn-passive w-full py-2 rounded font-bold">A5 YATAY</button>
+            <button onclick="setSize('size-a3', this)" class="size-btn btn-passive w-full py-2 rounded font-bold">A3</button>
+            <button onclick="setSize('size-shelf', this)" class="size-btn btn-passive w-full py-2 rounded font-bold">RAF (15x13.5)</button>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 p-4 rounded-lg border border-gray-700">
+          <label class="text-xs font-bold text-gray-400 mb-2 block uppercase">Ürün Barkodu Okut</label>
+          <form id="searchForm" onsubmit="event.preventDefault(); urunIsle();" class="flex gap-2">
+            <input type="text" id="barkod" class="w-full bg-gray-900 border border-gray-600 rounded p-3 text-white font-mono font-bold text-lg outline-none focus:border-red-500" placeholder="Barkod..." autofocus autocomplete="off">
+            <button type="submit" class="bg-red-600 text-white px-4 rounded font-bold hover:bg-red-700">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </form>
+          <div id="queueCount" class="text-right text-xs text-yellow-500 mt-2 hidden">Listede: 0 Ürün</div>
+          <div id="errorMsg" class="text-red-500 text-xs font-bold mt-2 hidden"></div>
+        </div>
+
+        <div>
+          <label class="text-xs font-bold text-gray-500 mb-2 block uppercase">Kampanya Tipi</label>
+          <div class="space-y-2">
+            <button onclick="setKampanya('normal')" id="btn-camp-normal" class="camp-btn w-full p-3 rounded border-2 border-white bg-white text-black text-left font-bold">Standart Fiyat (Satış Fiyatı)</button>
+            <button onclick="setKampanya('3al2ode')" id="btn-camp-3al2ode" class="camp-btn w-full p-3 rounded border border-gray-600 bg-gray-800 text-gray-400 text-left">3 Al 2 Öde</button>
+            <button onclick="setKampanya('1al1bedava')" id="btn-camp-1al1bedava" class="camp-btn w-full p-3 rounded border border-gray-600 bg-gray-800 text-gray-400 text-left">1 Alana 1 Bedava</button>
+            <button onclick="setKampanya('2ci50')" id="btn-camp-2ci50" class="camp-btn w-full p-3 rounded border border-gray-600 bg-gray-800 text-gray-400 text-left">2.si %50 İndirim</button>
+          </div>
+        </div>
+
+        <div class="mt-auto pt-4 border-t border-gray-700">
+          <button onclick="printNow()" class="w-full bg-white text-black py-4 rounded font-black text-2xl hover:bg-gray-200 shadow-lg border-4 border-black flex items-center justify-center gap-2">
+            <i class="fa-solid fa-print"></i> YAZDIR
+          </button>
+          <button onclick="clearQueue()" id="btnClear" class="w-full mt-2 bg-red-800 text-white py-2 rounded font-bold text-sm hover:bg-red-700 hidden">LİSTEYİ TEMİZLE</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex-1 bg-gray-500 overflow-auto flex justify-center items-start p-8 print-area" id="previewArea">
+       <div class='text-white text-2xl font-bold mt-10 opacity-50'>Barkod okutarak başlayın...</div>
+    </div>
+  </div>
+
+  <script>
+    // --- SUPABASE AYARLARI ---
+    const SUPABASE_URL = "https://asixtbjdsypmobadjyeh.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzaXh0Ympkc3lwbW9iYWRqeWVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NjU5MjcsImV4cCI6MjA4NDA0MTkyN30.YODCqUCmG2VG-w5I1Al6qJE60v25FWeKBH9qx05Irfw";
+    
+    const { createClient } = supabase;
+    const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- DURUM YÖNETİMİ ---
+    let state = { mode:'single', size:'size-a4', campaign:'normal', queue:[], activeProduct:null };
+
+    function setMode(m){
+      state.mode = m;
+      document.getElementById('btn-mode-single').className = m==='single' ? "flex-1 p-3 rounded font-bold border-2 bg-white text-black" : "flex-1 p-3 rounded font-bold border-2 bg-gray-800 text-gray-400 border-gray-600";
+      document.getElementById('btn-mode-multi').className = m==='multi' ? "flex-1 p-3 rounded font-bold border-2 bg-white text-black" : "flex-1 p-3 rounded font-bold border-2 bg-gray-800 text-gray-400 border-gray-600";
+      
+      const sizeDiv = document.getElementById('size-options');
+      if(m==='multi'){ sizeDiv.style.opacity='0.3'; sizeDiv.style.pointerEvents='none'; }
+      else { sizeDiv.style.opacity='1'; sizeDiv.style.pointerEvents='auto'; }
+
+      document.getElementById('queueCount').classList.toggle('hidden', m==='single');
+      document.getElementById('btnClear').classList.toggle('hidden', m==='single');
+
+      if(m==='multi'){ state.queue=[]; updateQueueCount(); }
+      render();
+    }
+
+    function setSize(s, btn){
+      state.size = s;
+      document.querySelectorAll('.size-btn').forEach(b=> b.className="size-btn btn-passive w-full py-2 rounded font-bold");
+      if(btn) btn.className="size-btn btn-active w-full py-2 rounded font-bold";
+      render();
+    }
+
+    function setKampanya(c){
+      state.campaign = c;
+      document.querySelectorAll('.camp-btn').forEach(b=> b.className="camp-btn w-full p-3 rounded border border-gray-600 bg-gray-800 text-gray-400 text-left");
+      document.getElementById('btn-camp-'+c).className="camp-btn w-full p-3 rounded border-2 border-white bg-white text-black text-left font-bold";
+      if(state.mode==='single') render();
+    }
+
+    async function urunIsle(){
+      const input = document.getElementById('barkod');
+      const err = document.getElementById('errorMsg');
+      const kod = (input.value||'').trim();
+      if(!kod) return;
+
+      err.classList.add('hidden');
+      
+      try {
+        const { data, error } = await client.from('urunler').select('*').eq('barkod', kod).maybeSingle();
+
+        if(error) throw error;
+        if(!data) {
+           err.textContent = "Ürün bulunamadı!";
+           err.classList.remove('hidden');
+           input.select();
+           return;
+        }
+
+        const p = {
+            barkod: data.barkod,
+            ad: data.ad,
+            fiyat: data.fiyat,
+            birimText: data.birim,
+            gramaj: (data.gramaj ?? data.GRAMAJ ?? null),
+            gramajTipi: (data.gramajtipi ?? data.GRAMAJTIPI ?? data.gramaj_tipi ?? null),
+            tarih: data.tarih
+        };
+
+        if(state.mode==='single'){ state.activeProduct = p; }
+        else { state.queue.push(p); updateQueueCount(); }
+
+        input.value="";
+        input.focus();
+        render();
+
+      } catch(e) {
+        console.error(e);
+        err.textContent = "Bağlantı hatası!";
+        err.classList.remove('hidden');
+      }
+    }
+
+    function updateQueueCount(){
+      document.getElementById('queueCount').innerText = `Listede: ${state.queue.length} Ürün`;
+    }
+
+    function clearQueue(){ state.queue=[]; updateQueueCount(); render(); }
+
+    function applyPrintPageSize(){
+      let w = null, h = null;
+      if(state.mode==='multi'){
+        w = '210mm'; h = '297mm';
+      } else {
+        if(state.size==='size-a4'){ w='210mm'; h='297mm'; }
+        else if(state.size==='size-a5'){ w='148mm'; h='210mm'; }
+        else if(state.size==='size-a5l'){ w='210mm'; h='148mm'; }
+        else if(state.size==='size-a3'){ w='297mm'; h='420mm'; }
+        else if(state.size==='size-shelf'){ w='150mm'; h='135mm'; }
+      }
+      const css = (w && h)
+        ? `@media print{ @page{ size: ${w} ${h}; margin:0; } }`
+        : `@media print{ @page{ size:auto; margin:0; } }`;
+
+      let st = document.getElementById('dynamicPageStyle');
+      if(!st){
+        st = document.createElement('style');
+        st.id = 'dynamicPageStyle';
+        document.head.appendChild(st);
+      }
+      st.textContent = css;
+    }
+
+    function printNow(){
+      applyPrintPageSize();
+      window.print();
+    }
+
+    // --- BİRİM FİYAT MOTORU (GÜÇLENDİRİLMİŞ VERSİYON) ---
+    function getDynamicUnitInfo(product, currentPrice) {
+        const price = Number(currentPrice || 0);
+        const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : "0.00");
+
+        const parseNum = (v) => {
+            if (v === null || v === undefined) return NaN;
+            let t = String(v).trim();
+            t = t.replace(',', '.');
+            t = t.replace(/[^0-9.\-]/g, '');
+            const n = parseFloat(t);
+            return Number.isFinite(n) ? n : NaN;
+        };
+
+        const fmtQty = (v) => {
+            const n = parseNum(v);
+            if (!Number.isFinite(n)) return "";
+            let s = n.toFixed(3).replace(/\.0+$/,'').replace(/(\.[0-9]*?)0+$/,'$1');
+            return s.replace('.', ',');
+        };
+
+        // 1. ADIM: SQL'den gelen SAYISAL gramaj alanları varsa öncelik ver
+        const gramaj = parseNum(product && (product.gramaj ?? product.GRAMAJ));
+        const tipRaw = product && (product.gramajTipi ?? product.gramajtipi ?? product.GRAMAJTIPI ?? product.gramaj_tipi ?? "");
+        const tip = String(tipRaw || "").trim().toUpperCase().replace(/İ/g, 'I');
+
+        if (Number.isFinite(gramaj) && gramaj > 0 && tip) {
+            if (["ADET","TANE","AD","PCS"].includes(tip)) {
+                if (gramaj > 1) {
+                    const tane = price / gramaj;
+                    return `${fmtQty(gramaj)} adet (Tane: ${fmt(tane)} TL)`;
+                }
+                return `Birim: ${fmt(price)} TL`;
+            }
+            if (["GR","G"].includes(tip)) {
+                const kgPrice = (price * 1000) / gramaj;
+                return `${fmtQty(gramaj)} gr (Kg: ${fmt(kgPrice)} TL)`;
+            }
+            if (["KG","KILOGRAM","KİLOGRAM"].includes(tip)) {
+                const kgPrice = price / gramaj;
+                return `${fmtQty(gramaj)} kg (Kg: ${fmt(kgPrice)} TL)`;
+            }
+            if (["ML"].includes(tip)) {
+                const ltPrice = (price * 1000) / gramaj;
+                return `${fmtQty(gramaj)} ml (Lt: ${fmt(ltPrice)} TL)`;
+            }
+            if (["CL"].includes(tip)) {
+                const ltPrice = (price * 100) / gramaj;
+                return `${fmtQty(gramaj)} cl (Lt: ${fmt(ltPrice)} TL)`;
+            }
+            if (["LT","L","LTR","LITRE","LİTRE"].includes(tip)) {
+                const ltPrice = price / gramaj;
+                return `${fmtQty(gramaj)} lt (Lt: ${fmt(ltPrice)} TL)`;
+            }
+        }
+
+        // 2. ADIM: Metin analizi
+        let rawUnit = (product && (product.birimText ?? product.birim ?? "")) ? String(product.birimText ?? product.birim).trim() : "";
+        const uName = (product && product.ad) ? String(product.ad).trim() : "";
+        
+        let sourceText = rawUnit;
+        const rawUpper = rawUnit.toUpperCase().replace(/İ/g, 'I');
+        
+        if (!rawUnit || rawUpper === 'ADET' || rawUpper === '1 ADET' || rawUpper === 'TANE') {
+            sourceText = uName;
+        }
+
+        return getDynamicUnitInfoFromText(sourceText, price);
+    }
+
+    function getDynamicUnitInfoFromText(textSource, currentPrice) {
+        const price = Number(currentPrice || 0);
+        const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : "0.00");
+        
+        if (!textSource || !String(textSource).trim()) {
+            return `Birim: ${fmt(price)} TL`;
+        }
+
+        const raw = String(textSource).trim();
+        const txt = raw.toUpperCase().replace(/İ/g, 'I');
+        
+        const parseTR = (s) => {
+            let t = s.replace(',', '.');
+            return parseFloat(t);
+        };
+
+        // --- GELİŞMİŞ REGEXLER ---
+
+        // 1) Litre: "2.5LT", "2,5 LT", "1L"
+        let m = txt.match(/(\d+(?:[\.,]\d+)?)\s*(?:LT|L|LITRE|LİTRE)/);
+        if (m) {
+            const lt = parseTR(m[1]);
+            if (lt > 0) {
+                const ltPrice = price / lt;
+                return `${m[1].replace('.', ',')} Lt (Lt: ${fmt(ltPrice)} TL)`;
+            }
+        }
+
+        // 2) Mililitre: "330ML", "500 ML"
+        m = txt.match(/(\d+(?:[\.,]\d+)?)\s*ML/);
+        if (m) {
+            const ml = parseTR(m[1]);
+            if (ml > 0) {
+                const ltPrice = (price * 1000) / ml;
+                return `${m[1].replace('.', ',')} ml (Lt: ${fmt(ltPrice)} TL)`;
+            }
+        }
+
+        // 3) Gram: "500GR", "100 G"
+        m = txt.match(/(\d+(?:[\.,]\d+)?)\s*(?:GR|G|GRAM)/);
+        if (m) {
+            const gr = parseTR(m[1]);
+            if (gr > 0) {
+                const kgPrice = (price * 1000) / gr;
+                return `${m[1].replace('.', ',')} gr (Kg: ${fmt(kgPrice)} TL)`;
+            }
+        }
+
+        // 4) Kilogram (Sayı ile): "5KG", "2.5 KG"
+        m = txt.match(/(\d+(?:[\.,]\d+)?)\s*(?:KG|KILO|KİLO)/);
+        if (m) {
+            const kg = parseTR(m[1]);
+            if (kg > 0) {
+                const kgPrice = price / kg;
+                return `${m[1].replace('.', ',')} kg (Kg: ${fmt(kgPrice)} TL)`;
+            }
+        }
+
+        // 5) SADECE "KG" İBARESİ (Elma Golden Kg gibi)
+        // Eğer rakam yoksa ama KG kelimesi geçiyorsa, satış fiyatı = birim fiyat demektir.
+        if (txt.includes("KG") || txt.includes("KİLO")) {
+             return `Birim: ${fmt(price)} TL / Kg`;
+        }
+
+        // 6) Çoklu Paket
+        m = txt.match(/(\d+)\s*(?:ADET|TANE|PAKET|LI|Lİ)/);
+        if (m) {
+            const adet = parseTR(m[1]);
+            if (adet > 1) {
+                const tane = price / adet;
+                return `${adet} ADET (Tane: ${fmt(tane)} TL)`;
+            }
+        }
+        
+        if (textSource.length > 15) { 
+             return `Birim: ${fmt(price)} TL`;
+        }
+
+        return raw;
+    }
+
+    function render(){
+      const container = document.getElementById('previewArea');
+      container.innerHTML = "";
+
+      if(state.mode==='single'){
+        if(state.activeProduct) container.appendChild(createLabel(state.activeProduct, state.size));
+        else container.innerHTML = "<div class='text-white text-2xl font-bold mt-10 opacity-50'>Barkod okutun...</div>";
+      } else {
+        if(state.queue.length===0){
+          container.innerHTML = "<div class='text-white text-2xl font-bold mt-10 opacity-50'>Listeye ürün ekleyin...</div>";
+        }
+        for(let i=0;i<state.queue.length;i+=3){
+          const sheet = document.createElement('div');
+          sheet.className = "multi-sheet";
+          for(let j=0;j<3;j++){
+            if(state.queue[i+j]) sheet.appendChild(createLabel(state.queue[i+j], 'strip-label'));
+          }
+          container.appendChild(sheet);
+        }
+      }
+      
+      document.querySelectorAll(".barcode-gen").forEach(svg => {
+         const val = svg.getAttribute("jsbarcode-value");
+         if(val){
+             try {
+                 JsBarcode(svg, val, {
+                    format: "CODE128",
+                    lineColor: "#000",
+                    width: 2,
+                    height: 40,
+                    displayValue: true,
+                    text: val,
+                    fontSize: 14,
+                    marginTop: 5
+                 });
+             } catch(e) { console.error("Barkod hatası:", val); }
+         }
+      });
+    }
+
+    function headerFit(sizeClass, baslik, isCampaign){
+      let headH, titleClass, subClass;
+      if(sizeClass==='size-a4'){ headH=isCampaign?'190px':'180px'; titleClass='text-7xl'; subClass='text-2xl'; }
+      if(sizeClass==='size-a5'){ headH=isCampaign?'160px':'130px'; titleClass='text-6xl'; subClass='text-xl'; }
+      if(sizeClass==='size-a5l'){ headH=isCampaign?'130px':'110px'; titleClass='text-6xl'; subClass='text-xl'; }
+      if(sizeClass==='size-a3'){ headH=isCampaign?'260px':'250px'; titleClass='text-9xl'; subClass='text-3xl'; }
+      if(sizeClass==='size-shelf'){ headH=isCampaign?'52px':'45px'; titleClass='text-3xl'; subClass='text-[10px]'; }
+
+      if(sizeClass==='size-a5' && baslik.length>12) titleClass='text-5xl';
+      if(sizeClass==='size-a4' && baslik.length>=16) titleClass='text-6xl';
+      if(sizeClass==='size-shelf' && baslik.length>12) titleClass='text-2xl';
+      
+      return { headH, titleClass, subClass };
+    }
+
+    function createLabel(product, sizeClass){
+      const el = document.createElement('div');
+      el.className = (sizeClass==='strip-label') ? 'strip-label' : `label-card ${sizeClass}`;
+
+      const normalFiyat = parseFloat(product.fiyat||0);
+      let satisFiyat = normalFiyat;
+      let baslik = "SATIŞ FİYATI";
+      let altBaslik = "";
+      let dipNot = "";
+      let badgeText = "";
+      let isCampaign = false;
+
+      const camp = state.campaign;
+
+      if(camp!=='normal'){
+        isCampaign = true;
+        if(camp==='3al2ode'){ satisFiyat=(normalFiyat*2)/3; baslik="3 AL 2 ÖDE"; altBaslik="ÇOKLU ALIM"; badgeText="ADET FİYATI"; dipNot="3 ADET ALIMDA BİRİM FİYATTIR"; }
+        if(camp==='1al1bedava'){ satisFiyat=normalFiyat/2; baslik="1 ALANA 1 BEDAVA"; altBaslik="YARI FİYATINA"; badgeText="BİRİM FİYAT"; dipNot="2 ADET ALIMDA BİRİM MALİYET"; }
+        if(camp==='2ci50'){ satisFiyat=normalFiyat*0.75; baslik="İKİNCİSİ %50"; altBaslik="FIRSAT"; badgeText="ORTALAMA"; dipNot="2 ADET ALIMDA ORTALAMA MALİYET"; }
+      }
+
+      // Dinamik birim fiyat hesaplama
+      const dinamikBirimText = getDynamicUnitInfo(product, satisFiyat);
+
+      const [tam, kurus] = satisFiyat.toFixed(2).split('.');
+
+      // YERLİ ÜRETİM KONTROLÜ (GÜNCELLENDİ)
+      // 1. Barkod 868/869 ile başlıyor mu?
+      // 2. Barkod 2 ile başlıyor mu? (Terazi ürünü genelde yerli meyve sebzedir)
+      // 3. Ürün adında "KG" geçiyor mu? (Elma Golden Kg gibi)
+      const uNameUpper = (product.ad || "").toUpperCase();
+      const isKgUrunu = uNameUpper.includes("KG") || uNameUpper.includes("KİLO");
+      
+      const isYerli = (product.barkod||"").startsWith('868') || 
+                      (product.barkod||"").startsWith('869') || 
+                      (product.barkod||"").startsWith('2') || 
+                      isKgUrunu;
+
+      const uretimYeri = isYerli ? "TÜRKİYE" : "İTHAL";
+
+      let s = {};
+      if(sizeClass==='size-a4') s = { urun:'text-6xl', big:'260px', small:'90px', tl:'60px', oldPrice:'text-6xl' };
+      else if(sizeClass==='size-a5') s = { urun:'text-4xl', big:'180px', small:'60px', tl:'40px', oldPrice:'text-4xl' };
+      else if(sizeClass==='size-a5l') s = { urun:'text-4xl', big:'180px', small:'60px', tl:'40px', oldPrice:'text-4xl' };
+      else if(sizeClass==='size-shelf') s = { urun:'text-2xl', big:'125px', small:'32px', tl:'18px', oldPrice:'text-xl' };
+      else if(sizeClass==='size-a3') s = { urun:'text-8xl', big:'450px', small:'150px', tl:'100px', oldPrice:'text-7xl' };
+      else if(sizeClass==='strip-label') s = { urun:'text-4xl' };
+
+      if (sizeClass === 'size-shelf') {
+        let big = isCampaign ? 118 : 124;
+        if (tam.length >= 3) big -= 10;
+        s.big = big + "px";
+        s.small = "30px";
+        s.tl = "18px";
+      }
+
+      let foldHtml = '';
+      if(sizeClass==='size-shelf') foldHtml = `<div class="fold-area"><span>⬇️ RAF (3.5cm) ⬇️</span></div>`;
+
+      const yerliLogoHtml = isYerli
+        ? `<div class="yerli-logo-box"><i class="fa-solid fa-handshake-simple text-xl mr-2"></i><div class="flex flex-col leading-none font-bold text-[10px]"><span>YERLİ</span><span>ÜRETİM</span></div></div>`
+        : `<div class="font-bold border-2 border-black px-2 rounded text-[10px]">MENŞEİ: ${uretimYeri}</div>`;
+
+      let urunSize = s.urun;
+      if((sizeClass==='size-a5' || sizeClass==='size-a5l') && product.ad.length>38) urunSize='text-3xl';
+      if(sizeClass==='size-shelf' && product.ad.length>28) urunSize='text-xl';
+
+      const clamp = (sizeClass==='size-shelf') ? 'clamp-2' : '';
+      const urunClass = `text-center font-black text-black leading-tight uppercase ${urunSize} mb-2 ${clamp}`;
+
+      let normalPriceHtml = '';
+      if(isCampaign){
+        normalPriceHtml = `
+          <div class="flex items-center gap-2 mb-1 justify-center">
+            <span class="font-bold text-gray-500 uppercase text-xs">Normal:</span>
+            <span class="font-bold text-gray-400 line-through decoration-black decoration-2 text-xl">${normalFiyat.toFixed(2)}</span>
+          </div>`;
+      }
+
+      let headerHtml = '';
+      if(sizeClass !== 'strip-label'){
+        const hf = headerFit(sizeClass, baslik, isCampaign);
+        headerHtml = `
+          <div class="header-box" style="height:${hf.headH}; background:${isCampaign?'black':'white'}; color:${isCampaign?'white':'black'}">
+            <h1 class="font-black uppercase tracking-tighter leading-tight ${hf.titleClass}">${baslik}</h1>
+            ${isCampaign && sizeClass!=='size-shelf' ? `<span class="${hf.subClass} font-bold mt-1 px-4 border-2 border-white rounded-full uppercase">${altBaslik}</span>` : ``}
+          </div>`;
+      }
+
+      if(sizeClass==='strip-label'){
+        return stripLabelGenerate(product, baslik, isCampaign, tam, kurus, yerliLogoHtml, normalFiyat, uretimYeri, satisFiyat, dinamikBirimText);
+      }
+
+      const badgeHtml = isCampaign ? `<div class="bg-black text-white px-3 py-0 text-lg rounded font-bold uppercase tracking-widest mb-1">${badgeText}</div>` : '';
+      const dipHtml = dipNot ? `<div class="bg-black text-white w-full text-center py-1 mt-2 text-sm font-bold uppercase rounded">${dipNot}</div>` : '';
+
+      const bodyHtml = `
+        <div class="content-box w-full bg-white">
+          <h2 class="${urunClass}">${product.ad}</h2>
+          ${normalPriceHtml}
+          ${badgeHtml}
+          <div class="price-row text-black mt-1">
+            <span class="price-left font-black leading-none" style="font-size:${s.big};">${tam}</span>
+            <div class="price-right">
+              <span class="kurus font-black" style="font-size:${s.small};">${kurus}</span>
+              <span class="tl font-black" style="font-size:${s.tl}; margin-top:5px;">TL</span>
+            </div>
+          </div>
+          ${dipHtml}
+        </div>
+        <div class="footer-info">
+          <div class="flex flex-col gap-1 w-1/2">
+            ${yerliLogoHtml}
+            <div class="flex flex-col leading-none mt-1">
+              <div class="text-[10px] font-bold text-gray-600">Değ.Tar: ${product.tarih} | Menşei: ${uretimYeri}</div>
+              <div class="text-[10px] font-bold text-gray-600">${dinamikBirimText}</div>
+            </div>
+          </div>
+          <div class="flex flex-col items-end w-1/2">
+             <div class="barcode-container">
+               <svg class="barcode-gen" jsbarcode-value="${product.barkod}" jsbarcode-height="30"></svg>
+             </div>
+             ${sizeClass!=='size-shelf' ? '<p class="text-2xl font-black text-black italic tracking-tighter mt-1">HALK MARKET</p>' : ''}
+          </div>
+        </div>
+      `;
+
+      const wrapPad = (sizeClass === 'size-shelf') ? 'p-2' : 'p-4';
+      el.innerHTML = foldHtml + headerHtml + `<div class="w-full flex-1 min-h-0 flex flex-col ${wrapPad} box-border">${bodyHtml}</div>`;
+      return el;
+    }
+
+    function stripLabelGenerate(product, baslik, isCampaign, tam, kurus, yerliLogoHtml, normalFiyat, uretimYeri, satisFiyat, dinamikBirimText){
+       const el = document.createElement('div');
+       el.className = 'strip-label';
+       
+       const bodyHtml = `
+          <div class="strip-left">
+             ${isCampaign 
+               ? `<div class="bg-black text-white text-center py-2 rounded"><div class="font-black uppercase text-3xl tracking-tighter leading-none">${baslik}</div></div>`
+               : `<div class="border-b-2 border-black pb-1 text-center"><div class="font-black uppercase text-3xl tracking-tighter">SATIŞ FİYATI</div></div>`
+             }
+             <div class="font-black text-black leading-tight uppercase text-4xl mt-2 clamp-2">${product.ad}</div>
+             <div class="flex justify-between items-end mt-2">
+               ${yerliLogoHtml}
+               <div class="text-[11px] font-bold text-right leading-tight">
+                 <div>Değ.Tar: ${product.tarih}</div>
+                 <div>${dinamikBirimText}</div>
+               </div>
+             </div>
+             <div class="mt-2">
+                <svg class="barcode-gen" jsbarcode-value="${product.barkod}" jsbarcode-height="30" jsbarcode-width="1.5"></svg>
+             </div>
+          </div>
+          <div class="strip-right">
+             <div class="flex flex-col items-center justify-center">
+               ${isCampaign ? `<div class="text-xs font-bold text-gray-500 uppercase">Normal</div><div class="text-2xl font-bold text-gray-400 line-through decoration-black decoration-2 mb-2">${normalFiyat.toFixed(2)}</div>` : ``}
+               <div class="price-row">
+                 <span class="price-left" style="font-size:110px;">${tam}</span>
+                 <div class="price-right" style="padding-top:14px;">
+                   <span class="kurus font-black" style="font-size:50px;">${kurus}</span>
+                   <span class="tl font-black text-4xl mt-1">TL</span>
+                 </div>
+               </div>
+             </div>
+          </div>
+       `;
+       el.innerHTML = bodyHtml;
+       return el;
+    }
+  </script>
+</body>
+</html>
