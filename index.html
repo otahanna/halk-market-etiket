@@ -26,13 +26,34 @@
       .header-box, .content-box, .footer-info{ background:transparent !important; }
       #previewArea{ background:transparent !important; }
       html, body{ -webkit-print-color-adjust: economy !important; print-color-adjust: economy !important; }
+      
+      /* A5 Yatay icin ozel yazdirma ayari: Sayfayi ortala ve dondur */
+      .size-a5l {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(90deg);
+        margin: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always;
+      }
     }
 
     .label-card{ background:white; margin:auto; position:relative; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); box-sizing:border-box; align-items:center; color:black; }
     
     .size-a4{ width:210mm; height:297mm; padding:10mm; }
     .size-a5{ width:148mm; height:210mm; padding:5mm; }
-    .size-a5l{ width:210mm; height:148mm; padding:5mm; }
+    
+    /* GÜNCELLENEN A5 YATAY CSS: Tasarım Dikey (148x210) ama 90 derece dönük */
+    .size-a5l{ 
+      width:148mm; 
+      height:208mm; /* 210 yerine 208 yaparak taşmayı engelliyoruz */
+      padding:5mm; 
+      transform: rotate(90deg);
+      transform-origin: center;
+      margin: 50px auto; /* Ekranda rahat görünsün diye margin */
+    }
+    
     .size-a3{ width:297mm; height:420mm; padding:15mm; }
     .size-shelf{ width:150mm; height:135mm; padding:0; }
 
@@ -234,7 +255,7 @@
       } else {
         if(state.size==='size-a4'){ w='210mm'; h='297mm'; }
         else if(state.size==='size-a5'){ w='148mm'; h='210mm'; }
-        else if(state.size==='size-a5l'){ w='210mm'; h='148mm'; }
+        else if(state.size==='size-a5l'){ w='210mm'; h='148mm'; } // Yazıcıya hala yatay (210 geniş) diyoruz
         else if(state.size==='size-a3'){ w='297mm'; h='420mm'; }
         else if(state.size==='size-shelf'){ w='150mm'; h='135mm'; }
       }
@@ -256,7 +277,7 @@
       window.print();
     }
 
-    // --- BİRİM FİYAT MOTORU (GÜÇLENDİRİLMİŞ VERSİYON) ---
+    // --- BİRİM FİYAT MOTORU ---
     function getDynamicUnitInfo(product, currentPrice) {
         const price = Number(currentPrice || 0);
         const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : "0.00");
@@ -277,7 +298,7 @@
             return s.replace('.', ',');
         };
 
-        // 1. ADIM: SQL'den gelen SAYISAL gramaj alanları varsa öncelik ver
+        // 1. ADIM: SQL'den gelen SAYISAL gramaj
         const gramaj = parseNum(product && (product.gramaj ?? product.GRAMAJ));
         const tipRaw = product && (product.gramajTipi ?? product.gramajtipi ?? product.GRAMAJTIPI ?? product.gramaj_tipi ?? "");
         const tip = String(tipRaw || "").trim().toUpperCase().replace(/İ/g, 'I');
@@ -342,9 +363,6 @@
             return parseFloat(t);
         };
 
-        // --- GELİŞMİŞ REGEXLER ---
-
-        // 1) Litre: "2.5LT", "2,5 LT", "1L"
         let m = txt.match(/(\d+(?:[\.,]\d+)?)\s*(?:LT|L|LITRE|LİTRE)/);
         if (m) {
             const lt = parseTR(m[1]);
@@ -354,7 +372,6 @@
             }
         }
 
-        // 2) Mililitre: "330ML", "500 ML"
         m = txt.match(/(\d+(?:[\.,]\d+)?)\s*ML/);
         if (m) {
             const ml = parseTR(m[1]);
@@ -364,7 +381,6 @@
             }
         }
 
-        // 3) Gram: "500GR", "100 G"
         m = txt.match(/(\d+(?:[\.,]\d+)?)\s*(?:GR|G|GRAM)/);
         if (m) {
             const gr = parseTR(m[1]);
@@ -374,7 +390,6 @@
             }
         }
 
-        // 4) Kilogram (Sayı ile): "5KG", "2.5 KG"
         m = txt.match(/(\d+(?:[\.,]\d+)?)\s*(?:KG|KILO|KİLO)/);
         if (m) {
             const kg = parseTR(m[1]);
@@ -384,13 +399,10 @@
             }
         }
 
-        // 5) SADECE "KG" İBARESİ (Elma Golden Kg gibi)
-        // Eğer rakam yoksa ama KG kelimesi geçiyorsa, satış fiyatı = birim fiyat demektir.
         if (txt.includes("KG") || txt.includes("KİLO")) {
              return `Birim: ${fmt(price)} TL / Kg`;
         }
 
-        // 6) Çoklu Paket
         m = txt.match(/(\d+)\s*(?:ADET|TANE|PAKET|LI|Lİ)/);
         if (m) {
             const adet = parseTR(m[1]);
@@ -447,15 +459,23 @@
       });
     }
 
+    // --- GÜNCELLENEN HEADERFIT ---
     function headerFit(sizeClass, baslik, isCampaign){
       let headH, titleClass, subClass;
+      
       if(sizeClass==='size-a4'){ headH=isCampaign?'190px':'180px'; titleClass='text-7xl'; subClass='text-2xl'; }
-      if(sizeClass==='size-a5'){ headH=isCampaign?'160px':'130px'; titleClass='text-6xl'; subClass='text-xl'; }
-      if(sizeClass==='size-a5l'){ headH=isCampaign?'130px':'110px'; titleClass='text-6xl'; subClass='text-xl'; }
+      
+      // A5 YATAY ARTIK A5 DIKEY ILE AYNI HEADER AYARLARINI KULLANIYOR
+      if(sizeClass==='size-a5' || sizeClass==='size-a5l'){ 
+          headH=isCampaign?'160px':'130px'; 
+          titleClass='text-6xl'; 
+          subClass='text-xl'; 
+      }
+      
       if(sizeClass==='size-a3'){ headH=isCampaign?'260px':'250px'; titleClass='text-9xl'; subClass='text-3xl'; }
       if(sizeClass==='size-shelf'){ headH=isCampaign?'52px':'45px'; titleClass='text-3xl'; subClass='text-[10px]'; }
 
-      if(sizeClass==='size-a5' && baslik.length>12) titleClass='text-5xl';
+      if((sizeClass==='size-a5' || sizeClass==='size-a5l') && baslik.length>12) titleClass='text-5xl';
       if(sizeClass==='size-a4' && baslik.length>=16) titleClass='text-6xl';
       if(sizeClass==='size-shelf' && baslik.length>12) titleClass='text-2xl';
       
@@ -483,15 +503,9 @@
         if(camp==='2ci50'){ satisFiyat=normalFiyat*0.75; baslik="İKİNCİSİ %50"; altBaslik="FIRSAT"; badgeText="ORTALAMA"; dipNot="2 ADET ALIMDA ORTALAMA MALİYET"; }
       }
 
-      // Dinamik birim fiyat hesaplama
       const dinamikBirimText = getDynamicUnitInfo(product, satisFiyat);
-
       const [tam, kurus] = satisFiyat.toFixed(2).split('.');
 
-      // YERLİ ÜRETİM KONTROLÜ (GÜNCELLENDİ)
-      // 1. Barkod 868/869 ile başlıyor mu?
-      // 2. Barkod 2 ile başlıyor mu? (Terazi ürünü genelde yerli meyve sebzedir)
-      // 3. Ürün adında "KG" geçiyor mu? (Elma Golden Kg gibi)
       const uNameUpper = (product.ad || "").toUpperCase();
       const isKgUrunu = uNameUpper.includes("KG") || uNameUpper.includes("KİLO");
       
@@ -503,9 +517,9 @@
       const uretimYeri = isYerli ? "TÜRKİYE" : "İTHAL";
 
       let s = {};
+      // A5L ARTIK A5 ILE AYNI FONT AYARLARINI KULLANIYOR
       if(sizeClass==='size-a4') s = { urun:'text-6xl', big:'260px', small:'90px', tl:'60px', oldPrice:'text-6xl' };
-      else if(sizeClass==='size-a5') s = { urun:'text-4xl', big:'180px', small:'60px', tl:'40px', oldPrice:'text-4xl' };
-      else if(sizeClass==='size-a5l') s = { urun:'text-4xl', big:'180px', small:'60px', tl:'40px', oldPrice:'text-4xl' };
+      else if(sizeClass==='size-a5' || sizeClass==='size-a5l') s = { urun:'text-4xl', big:'180px', small:'60px', tl:'40px', oldPrice:'text-4xl' };
       else if(sizeClass==='size-shelf') s = { urun:'text-2xl', big:'125px', small:'32px', tl:'18px', oldPrice:'text-xl' };
       else if(sizeClass==='size-a3') s = { urun:'text-8xl', big:'450px', small:'150px', tl:'100px', oldPrice:'text-7xl' };
       else if(sizeClass==='strip-label') s = { urun:'text-4xl' };
