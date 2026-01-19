@@ -63,16 +63,27 @@
     /* İÇERİK DÜZENİ */
     .header-box{ width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; border-bottom:none; flex-shrink:0; text-align:center; overflow:hidden; padding:0; box-sizing:border-box; }
     
-    /* Content Box: flex-1 ile alanı doldurur ama justify-center yerine space-around kullanırsak çok sıkışık durmaz */
     .content-box{ width:100%; flex:1; border:none; border-radius:0; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:0; position:relative; background:white; overflow:hidden; box-sizing:border-box; }
     .size-shelf .content-box { margin: 5px 0 !important; padding: 0 5px; } 
 
-    /* Fiyat Satırı: Baseline hizalama (TL simgesi tabanda dursun) */
+    /* Fiyat Satırı */
     .price-row{ display:flex; align-items:baseline; justify-content:center; line-height:0.85; margin-top: 5px; }
     .size-shelf .price-row { margin-top: 0; } 
 
-    /* Footer Hizalama: items-center ile her şey ortalı */
-    .footer-info{ width:100%; display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding-top:0; border-top:none; flex-shrink:0; gap:8px; box-sizing:border-box; }
+    /* --- YENİ FOOTER DÜZENİ (3 SÜTUN - ÜST HİZALI) --- */
+    .footer-info{ 
+        width:100%; 
+        display:flex; 
+        flex-direction: row; 
+        justify-content:space-between; 
+        align-items: flex-start; /* GÜNCELLENDİ: ÜST HİZA (CETVEL GİBİ) */
+        margin-top:5px; 
+        padding-top:0; 
+        border-top:none; 
+        flex-shrink:0; 
+        gap:5px; 
+        box-sizing:border-box; 
+    }
     .size-shelf .footer-info { padding: 0 10px 10px 10px; margin-top: 0; align-items: center !important; }
 
     .yerli-logo-box{ display:flex; align-items:center; justify-content: flex-start; border:none; background:white; color:black; flex-shrink:0; }
@@ -85,7 +96,7 @@
     .strip-right{ flex:0 0 35%; max-width: 35%; padding:10px 5px; display:flex; align-items:center; justify-content:center; }
 
     .barcode-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: fit-content; }
-    .barcode-svg { display:block; }
+    .barcode-svg { display:block; margin-bottom: 0 !important; } /* Boşluk yok */
     
     .fold-area{ display:none; width:100%; height:35mm; background:#fff; border-bottom:1px dashed #ccc; align-items:center; justify-content:center; font-weight:bold; font-size:12px; flex-shrink:0; }
     .size-shelf .fold-area{ display:flex; } 
@@ -476,7 +487,8 @@
       let s = {};
 
       if(sizeClass === 'size-a5' || sizeClass === 'size-a5l') {
-          // A5: Ürün 55pt, Fiyat 90pt
+          // A5: Logo 1.2cm, Barkod 0.7cm
+          // GÜNCELLEME: kdvMargin -10px ve line height ayarları ile metin yukarı çekildi.
           s = {
               urun: '55pt',
               big: '90pt',
@@ -485,9 +497,9 @@
               logoH: '1.2cm',
               info: '10pt',
               barcodeH: '0.7cm',
-              kdvMargin: '-5px',
-              lhUrun: '0.9', // Daha sıkı satır aralığı
-              lhPrice: '0.8'  // Daha sıkı satır aralığı
+              kdvMargin: '-10px',
+              lhUrun: '0.9',
+              lhPrice: '0.8'
           };
       } 
       else if (sizeClass === 'size-a4') {
@@ -508,6 +520,7 @@
           s = { urun:'100pt', big:'250pt', small:'100pt', tl:'60pt', logoH:'3cm', info:'16pt', barcodeH:'2.5cm', kdvMargin:'0px', lhUrun:'1', lhPrice:'1' };
       }
       else if (sizeClass === 'size-shelf') {
+          // RAF ETİKETİ: Minimal
           let bigFont = '110px';
           if(tam.length >= 3) bigFont = '90px'; 
           s = { 
@@ -542,11 +555,13 @@
           </div>`;
       }
 
+      // KATLAMA ALANI (Sadece Raf Etiketi için)
       let foldHtml = '';
       if(sizeClass === 'size-shelf') {
         foldHtml = `<div class="fold-area"><span>⬇️ RAF (3.5cm) ⬇️</span></div>`;
       }
 
+      // Yerli Logo HTML (Sola dayalı)
       const yerliLogoHtml = isYerli
         ? `<div class="yerli-logo-box" style="height:${s.logoH};">
              <i class="fa-solid fa-handshake-simple mr-2" style="font-size:calc(${s.logoH} * 0.6)"></i>
@@ -554,9 +569,10 @@
            </div>`
         : `<div class="font-bold border border-black px-2 flex items-center justify-center rounded" style="height:${s.logoH}; font-size:calc(${s.logoH} * 0.3)">MENŞEİ: ${uretimYeri}</div>`;
 
+      // KDV Yazısı
       const kdvText = 'K.D.V DAHİL FİYATTIR';
-      // KDV marjını kullanarak yukarı çekme
-      const kdvHtml = `<div class="font-bold mt-1 text-center whitespace-nowrap" style="font-size:${s.isShelf ? '8px' : '10pt'}; margin-top:${s.kdvMargin || '0px'}">${kdvText}</div>`;
+      // KDV marjını kullanarak yukarı çekme. line-height: 0.8 ile sıkıştırıldı.
+      const kdvHtml = `<div class="font-bold text-center whitespace-nowrap" style="font-size:${s.isShelf ? '8px' : '10pt'}; margin-top:${s.kdvMargin || '0px'}; line-height:0.8;">${kdvText}</div>`;
 
       const bodyHtml = `
         <div class="content-box w-full bg-white flex flex-col items-center justify-center flex-1">
@@ -578,23 +594,25 @@
         
         <div class="footer-info">
           
-          <div class="flex flex-row gap-4 w-2/3 items-center justify-start">
-            ${yerliLogoHtml}
-            <div class="flex flex-col leading-tight font-bold text-gray-700 text-left" style="font-size:${s.info};">
-              <span>Menşei: ${uretimYeri}</span>
-              <span>Fiy.Değ.Tar: ${product.tarih}</span>
-              <span>${dinamikBirimText}</span>
-            </div>
+          <div style="flex: 0 0 auto;">
+             ${yerliLogoHtml}
           </div>
           
-          <div class="flex flex-col items-end w-1/3 justify-end">
+          <div style="flex: 1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; font-weight:bold; font-size:${s.info}; line-height:1.1;">
+             <span>Menşei: ${uretimYeri}</span>
+             <span>Fiy.Değ.Tar: ${product.tarih}</span>
+             <span>${dinamikBirimText}</span>
+          </div>
+          
+          <div style="flex: 0 0 auto; display:flex; flex-direction:column; align-items:flex-end;">
              <div class="barcode-container">
                <svg class="barcode-gen" 
                     jsbarcode-value="${product.barkod}" 
-                    style="height:${s.barcodeH}; display:block;"></svg>
+                    style="height:${s.barcodeH}; display:block; margin-bottom:0;"></svg>
                ${kdvHtml}
              </div>
           </div>
+
         </div>
       `;
 
@@ -603,10 +621,12 @@
     }
 
     // --- ŞERİT ETİKET ---
+    // HATAYI GİDERMEK İÇİN: normalFiyat argümanı eklendi
     function stripLabelGenerate(product, baslik, isCampaign, tam, kurus, isYerli, uretimYeri, satisFiyat, dinamikBirimText, normalFiyat){
        const el = document.createElement('div');
        el.className = 'strip-label';
        
+       // ŞERİT ETİKET İÇİN LOGO
        const yerliHtml = isYerli 
          ? `<div class="yerli-logo-box" style="height:1.5cm; display:flex; align-items:center;">
               <i class="fa-solid fa-handshake-simple mr-2" style="font-size:32px"></i>
