@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Halk Market (Ortalı KDV)</title>
+  <title>Cepo Bulut Etiket</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -11,6 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
   <style>
+    /* GENEL FONT VE AYARLAR */
     body{ font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif; background-color:#374151; -webkit-print-color-adjust: exact; margin:0; padding:0; }
     
     @media print{
@@ -20,30 +21,18 @@
       .no-print{ display:none !important; }
       #previewArea, .print-area{ background:#fff !important; padding:0 !important; margin:0 !important; overflow:visible !important; display:block !important; }
       
-      /* A4 BASKI AYARI (Üst:4.5cm, Alt:3cm) */
-      .size-a4 { 
-        width:210mm; 
-        height:297mm; 
-        padding: 45mm 10mm 30mm 10mm !important; 
-        page-break-after: always;
-      }
+      /* KAĞIT BOYUTLARI */
       
-      /* A5 BASKI AYARI (Üst:3.5cm, Alt:2.5cm) */
-      .size-a5 { 
-          width:148mm; 
-          height:210mm; 
-          padding: 35mm 5mm 25mm 5mm !important; 
-          page-break-after: always;
-      }
+      /* A4 */
+      .size-a4 { width:210mm; height:297mm; padding: 45mm 10mm 30mm 10mm !important; page-break-after: always; }
+      
+      /* A5 DİKEY - (3.5cm Üst, 2.5cm Alt) */
+      .size-a5 { width:148mm; height:210mm; padding: 35mm 5mm 25mm 5mm !important; page-break-after: always; }
+      
+      /* RAF */
+      .size-shelf { width: 150mm !important; height: 135mm !important; padding: 0 !important; page-break-after: always; }
 
-      /* RAF ETİKETİ (Yedek.html Mantığı) */
-      .size-shelf {
-          width: 150mm !important;
-          height: 135mm !important;
-          padding: 0 !important;
-          page-break-after: always;
-      }
-
+      /* A5 YATAY (Çevrilmiş) */
       .size-a5l {
         width: 148mm !important; height: 210mm !important;
         position: absolute !important; top: 0 !important; left: 0 !important;
@@ -53,18 +42,16 @@
       }
 
       .label-card, .header-box, .content-box, .footer-info, .strip-label { 
-          border:none !important; 
-          box-shadow:none !important; 
-          margin:0 !important; 
+          border:none !important; box-shadow:none !important; margin:0 !important; 
       }
     }
 
-    /* EKRAN GÖRÜNÜMÜ */
+    /* EKRAN GÖRÜNÜMÜ İÇİN KUTU AYARLARI */
     .label-card{ background:white; margin:auto; position:relative; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); box-sizing:border-box; align-items:center; color:black; border:none; }
     
     .size-a4{ width:210mm; height:297mm; padding: 45mm 10mm 30mm 10mm !important; }
+    /* Ekranda da print ile aynı boşlukları görelim */
     .size-a5{ width:148mm; height:210mm; padding: 35mm 5mm 25mm 5mm !important; }
-    
     .size-shelf{ width:150mm; height:135mm; padding:0 !important; } 
     
     .size-a5l{ width:148mm; height:210mm; padding:5mm; margin: 30px auto; border: 2px dashed red; }
@@ -73,42 +60,32 @@
     
     .size-a3{ width:297mm; height:420mm; padding:15mm; }
 
-    /* DÜZEN */
+    /* İÇERİK DÜZENİ */
     .header-box{ width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; border-bottom:none; flex-shrink:0; text-align:center; overflow:hidden; padding:0; box-sizing:border-box; }
     
+    /* Content Box: flex-1 ile alanı doldurur ama justify-center yerine space-around kullanırsak çok sıkışık durmaz */
     .content-box{ width:100%; flex:1; border:none; border-radius:0; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:0; position:relative; background:white; overflow:hidden; box-sizing:border-box; }
     .size-shelf .content-box { margin: 5px 0 !important; padding: 0 5px; } 
 
-    .price-row{ display:flex; align-items:flex-start; justify-content:center; line-height:0.75; margin-top: 10px; }
+    /* Fiyat Satırı: Baseline hizalama (TL simgesi tabanda dursun) */
+    .price-row{ display:flex; align-items:baseline; justify-content:center; line-height:0.85; margin-top: 5px; }
     .size-shelf .price-row { margin-top: 0; } 
 
-    .price-left{ font-weight:900; letter-spacing:-4px; line-height: 0.8; }
-    .price-right{ display:flex; flex-direction:column; margin-left:15px; padding-top:10px; }
-    .size-shelf .price-right { margin-left: 5px; padding-top: 5px; } 
-    
-    .kurus{ border-bottom:none; margin-bottom:4px; line-height:0.8; }
-    .tl{ line-height:0.8; }
+    /* Footer Hizalama: items-center ile her şey ortalı */
+    .footer-info{ width:100%; display:flex; justify-content:space-between; align-items:center; margin-top:5px; padding-top:0; border-top:none; flex-shrink:0; gap:8px; box-sizing:border-box; }
+    .size-shelf .footer-info { padding: 0 10px 10px 10px; margin-top: 0; align-items: center !important; }
 
-    .footer-info{ width:100%; display:flex; justify-content:space-between; align-items:flex-end; margin-top:5px; padding-top:0; border-top:none; flex-shrink:0; gap:8px; box-sizing:border-box; }
-    .size-shelf .footer-info { padding: 0 10px 10px 10px; margin-top: 0; align-items: flex-end !important; }
-
-    /* Logo Sola Dayalı */
     .yerli-logo-box{ display:flex; align-items:center; justify-content: flex-start; border:none; background:white; color:black; flex-shrink:0; }
 
     .multi-sheet{ width:210mm; min-height:297mm; background:white; padding-top:5mm; display:flex; flex-direction:column; align-items:center; gap:5mm; box-shadow:0 0 15px rgba(0,0,0,0.5); margin:0 auto 20px auto; }
+    
+    /* ŞERİT ETİKET (Çoklu A4) */
     .strip-label{ width:200mm; height:92mm; border:none; display:flex; box-sizing:border-box; overflow:hidden; background:white; }
-    .strip-left{ flex:0 0 60%; padding:10px 12px; display:flex; flex-direction:column; justify-content:space-between; }
-    .strip-right{ flex:0 0 40%; padding:10px 12px; display:flex; align-items:center; justify-content:center; }
+    .strip-left{ flex:0 0 65%; max-width: 65%; padding:10px 12px; display:flex; flex-direction:column; justify-content:space-between; }
+    .strip-right{ flex:0 0 35%; max-width: 35%; padding:10px 5px; display:flex; align-items:center; justify-content:center; }
 
-    /* Barkod Kutusu: Ortalanmış */
-    .barcode-container { 
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; /* Barkod ve Yazıyı Ortalar */
-        justify-content: flex-end;
-        width: fit-content; /* Sadece içeriği kadar yer kaplar */
-    }
-    .barcode-svg { display:block; } /* width:100% KALDIRILDI */
+    .barcode-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: fit-content; }
+    .barcode-svg { display:block; }
     
     .fold-area{ display:none; width:100%; height:35mm; background:#fff; border-bottom:1px dashed #ccc; align-items:center; justify-content:center; font-weight:bold; font-size:12px; flex-shrink:0; }
     .size-shelf .fold-area{ display:flex; } 
@@ -125,7 +102,7 @@
     <div class="w-96 bg-gray-900 text-white flex flex-col z-50 no-print border-r border-gray-700 shadow-2xl">
       <div class="p-6 bg-red-900 border-b border-gray-700">
         <h1 class="text-2xl font-black italic">HALK MARKET</h1>
-        <p class="text-xs text-gray-200 mt-2">Özel Punto & Marj Ayarlı</p>
+        <p class="text-xs text-gray-200 mt-2">Cepo bulut etiket sistemi</p>
       </div>
 
       <div class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-900">
@@ -272,7 +249,7 @@
     function clearQueue(){ state.queue=[]; updateQueueCount(); render(); }
     function printNow(){ window.print(); }
 
-    // --- BİRİM FİYAT MOTORU (YEDEK.HTML'DEN) ---
+    // --- BİRİM FİYAT MOTORU ---
     function getDynamicUnitInfo(product, currentPrice) {
         const price = Number(currentPrice || 0);
         const fmt = (n) => (Number.isFinite(n) ? n.toFixed(2) : "0.00");
@@ -440,7 +417,7 @@
                  const isShelf = svg.closest('.size-shelf') !== null;
                  const isA5 = svg.closest('.size-a5') !== null || svg.closest('.size-a5l') !== null;
                  
-                 // Çubuk kalınlığı (width) ayarı - İnceltildi
+                 // Çubuk kalınlığı (width) ayarı
                  let barWidth = 1.5; 
                  if(isShelf) barWidth = 1.3; 
                  if(isA5) barWidth = 1.4;
@@ -484,14 +461,22 @@
 
       const dinamikBirimText = getDynamicUnitInfo(product, satisFiyat);
       const [tam, kurus] = satisFiyat.toFixed(2).split('.');
-      const isYerli = (product.barkod||"").startsWith('868') || (product.barkod||"").startsWith('869');
+      
+      const uNameUpper = (product.ad || "").toUpperCase();
+      const isKgUrunu = uNameUpper.includes("KG") || uNameUpper.includes("KİLO");
+      
+      const isYerli = (product.barkod||"").startsWith('868') || 
+                      (product.barkod||"").startsWith('869') || 
+                      (product.barkod||"").startsWith('2') || 
+                      isKgUrunu;
+
       const uretimYeri = isYerli ? "TÜRKİYE" : "İTHAL";
 
       // --- PUNTO VE BOYUT AYARLARI (CONFIG) ---
       let s = {};
 
       if(sizeClass === 'size-a5' || sizeClass === 'size-a5l') {
-          // A5: Logo 1.2cm, Barkod 0.7cm
+          // A5: Ürün 55pt, Fiyat 90pt
           s = {
               urun: '55pt',
               big: '90pt',
@@ -499,11 +484,13 @@
               tl: '30pt',
               logoH: '1.2cm',
               info: '10pt',
-              barcodeH: '0.7cm' 
+              barcodeH: '0.7cm',
+              kdvMargin: '-5px',
+              lhUrun: '0.9', // Daha sıkı satır aralığı
+              lhPrice: '0.8'  // Daha sıkı satır aralığı
           };
       } 
       else if (sizeClass === 'size-a4') {
-          // A4: Logo 1.8cm, Barkod 1.0cm
           s = {
               urun: '72pt',
               big: '140pt',
@@ -511,17 +498,18 @@
               tl: '45pt',
               logoH: '1.8cm',
               info: '12pt',
-              barcodeH: '1.0cm'
+              barcodeH: '1.0cm',
+              kdvMargin: '0px',
+              lhUrun: '1',
+              lhPrice: '1'
           };
       }
       else if (sizeClass === 'size-a3') {
-          s = { urun:'100pt', big:'250pt', small:'100pt', tl:'60pt', logoH:'3cm', info:'16pt', barcodeH:'2.5cm' };
+          s = { urun:'100pt', big:'250pt', small:'100pt', tl:'60pt', logoH:'3cm', info:'16pt', barcodeH:'2.5cm', kdvMargin:'0px', lhUrun:'1', lhPrice:'1' };
       }
       else if (sizeClass === 'size-shelf') {
-          // RAF ETİKETİ: Minimal
           let bigFont = '110px';
           if(tam.length >= 3) bigFont = '90px'; 
-
           s = { 
               urun:'24pt', 
               big: bigFont, 
@@ -530,11 +518,14 @@
               logoH:'1.0cm', 
               info:'9pt', 
               barcodeH:'0.6cm',
-              isShelf: true 
+              isShelf: true,
+              kdvMargin: '0px',
+              lhUrun:'1',
+              lhPrice:'0.8'
           };
       }
       else {
-          s = { urun:'20pt', big:'60pt', small:'30pt', tl:'16pt', logoH:'1cm', info:'8pt', barcodeH:'1cm' };
+          s = { urun:'20pt', big:'60pt', small:'30pt', tl:'16pt', logoH:'1cm', info:'8pt', barcodeH:'1cm', kdvMargin:'0px', lhUrun:'1', lhPrice:'1' };
       }
 
       // Şerit Etiket için
@@ -551,13 +542,11 @@
           </div>`;
       }
 
-      // KATLAMA ALANI (Sadece Raf Etiketi için)
       let foldHtml = '';
       if(sizeClass === 'size-shelf') {
         foldHtml = `<div class="fold-area"><span>⬇️ RAF (3.5cm) ⬇️</span></div>`;
       }
 
-      // Yerli Logo HTML (Sola dayalı)
       const yerliLogoHtml = isYerli
         ? `<div class="yerli-logo-box" style="height:${s.logoH};">
              <i class="fa-solid fa-handshake-simple mr-2" style="font-size:calc(${s.logoH} * 0.6)"></i>
@@ -565,33 +554,31 @@
            </div>`
         : `<div class="font-bold border border-black px-2 flex items-center justify-center rounded" style="height:${s.logoH}; font-size:calc(${s.logoH} * 0.3)">MENŞEİ: ${uretimYeri}</div>`;
 
-      // KDV Yazısı
       const kdvText = 'K.D.V DAHİL FİYATTIR';
-      const kdvHtml = `<div class="font-bold mt-1 text-center whitespace-nowrap" style="font-size:${s.isShelf ? '8px' : '10pt'};">${kdvText}</div>`;
+      // KDV marjını kullanarak yukarı çekme
+      const kdvHtml = `<div class="font-bold mt-1 text-center whitespace-nowrap" style="font-size:${s.isShelf ? '8px' : '10pt'}; margin-top:${s.kdvMargin || '0px'}">${kdvText}</div>`;
 
       const bodyHtml = `
         <div class="content-box w-full bg-white flex flex-col items-center justify-center flex-1">
           
-          <h2 class="text-center font-black text-black leading-none uppercase ${sizeClass==='size-shelf'?'clamp-2':''}" 
-              style="font-size:${s.urun}; margin-bottom:${s.isShelf ? '0' : '10px'};">
+          <h2 class="text-center font-black text-black uppercase ${sizeClass==='size-shelf'?'clamp-2':''}" 
+              style="font-size:${s.urun}; line-height:${s.lhUrun}; margin-bottom:${s.isShelf ? '0' : '10px'};">
               ${product.ad}
           </h2>
 
           ${isCampaign ? `<div class="text-3xl font-bold text-gray-400 line-through mb-2">${normalFiyat.toFixed(2)}</div>` : ''}
 
-          <div class="price-row text-black">
-            <span class="price-left font-black leading-none" style="font-size:${s.big};">${tam}</span>
-            <div class="price-right">
-              <span class="kurus font-black" style="font-size:${s.small};">${kurus}</span>
-              <span class="tl font-black" style="font-size:${s.tl}; margin-top:${s.isShelf ? '5px' : '5px'};">TL</span>
-            </div>
+          <div class="price-row text-black items-baseline" style="line-height:${s.lhPrice};">
+            <span class="font-black leading-none" style="font-size:${s.big};">${tam},${kurus}</span>
+            <span class="font-bold ml-2" style="font-size:calc(${s.big} * 0.5);">₺</span>
           </div>
           
           ${dipNot ? `<div class="bg-black text-white text-xl font-bold px-4 py-1 mt-2 rounded">${dipNot}</div>` : ''}
         </div>
         
         <div class="footer-info">
-          <div class="flex flex-col gap-1 w-1/2 items-start justify-end">
+          
+          <div class="flex flex-row gap-4 w-2/3 items-center justify-start">
             ${yerliLogoHtml}
             <div class="flex flex-col leading-tight font-bold text-gray-700 text-left" style="font-size:${s.info};">
               <span>Menşei: ${uretimYeri}</span>
@@ -600,7 +587,7 @@
             </div>
           </div>
           
-          <div class="flex flex-col items-end w-1/2 justify-end">
+          <div class="flex flex-col items-end w-1/3 justify-end">
              <div class="barcode-container">
                <svg class="barcode-gen" 
                     jsbarcode-value="${product.barkod}" 
@@ -616,37 +603,41 @@
     }
 
     // --- ŞERİT ETİKET ---
-    function stripLabelGenerate(product, baslik, isCampaign, tam, kurus, isYerli, uretimYeri, satisFiyat, dinamikBirimText){
+    function stripLabelGenerate(product, baslik, isCampaign, tam, kurus, isYerli, uretimYeri, satisFiyat, dinamikBirimText, normalFiyat){
        const el = document.createElement('div');
        el.className = 'strip-label';
        
        const yerliHtml = isYerli 
-         ? `<div class="border border-black px-1 rounded text-[10px] font-bold">YERLİ</div>` 
-         : `<div class="text-[10px] font-bold">İTHAL</div>`;
+         ? `<div class="yerli-logo-box" style="height:1.5cm; display:flex; align-items:center;">
+              <i class="fa-solid fa-handshake-simple mr-2" style="font-size:32px"></i>
+              <div class="flex flex-col leading-none font-bold" style="font-size:12px"><span>YERLİ</span><span>ÜRETİM</span></div>
+            </div>`
+         : `<div class="font-bold border border-black px-2 rounded text-[10px]">MENŞEİ: ${uretimYeri}</div>`;
 
        const bodyHtml = `
           <div class="strip-left">
              ${isCampaign ? `<div class="bg-black text-white text-center py-1 font-bold text-xl">${baslik}</div>` : ``}
-             <div class="font-black uppercase text-4xl leading-none clamp-2 mt-2">${product.ad}</div>
+             
+             <div class="font-black uppercase text-4xl leading-none clamp-2 mt-1 tracking-tight">${product.ad}</div>
+             
              <div class="mt-auto flex justify-between items-end">
-                ${yerliHtml}
-                <div class="text-[10px] font-bold text-right">
-                   <div>${product.tarih}</div>
-                   <div>${dinamikBirimText}</div>
+                <div class="flex items-center gap-2">
+                    ${yerliHtml}
+                    <div class="text-[10px] font-bold text-left">
+                       <div>${product.tarih}</div>
+                       <div>${dinamikBirimText}</div>
+                    </div>
                 </div>
              </div>
-             <div class="mt-1"><svg class="barcode-gen" jsbarcode-value="${product.barkod}" style="height:25px; width:100%;"></svg></div>
+             <div class="mt-1"><svg class="barcode-gen" jsbarcode-value="${product.barkod}" style="height:20px; width:auto;"></svg></div>
           </div>
           <div class="strip-right">
              <div class="flex flex-col items-center">
-               <div class="price-row">
-                 <span class="font-black text-[90px] leading-none">${tam}</span>
-                 <div class="flex flex-col ml-2 pt-4">
-                   <span class="font-black text-[40px] leading-none">${kurus}</span>
-                   <span class="text-xl font-bold">TL</span>
-                 </div>
+               <div class="price-row items-baseline" style="margin-right: 60px;">
+                 <span class="font-black leading-none" style="font-size:75px;">${tam},${kurus}</span>
+                 <span class="font-bold ml-1 text-4xl">₺</span>
                </div>
-               <div class="text-[8px] font-bold mt-1">KDV DAHİL</div>
+               <div class="text-[9px] font-bold mt-0 whitespace-nowrap" style="margin-right: 60px;">K.D.V DAHİL FİYATTIR</div>
              </div>
           </div>
        `;
