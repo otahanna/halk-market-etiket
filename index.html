@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Halk Market Etiket Sistemi</title>
+  <title>Halk Market Etiket (A5 Alt Boşluklu)</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -15,62 +15,63 @@
     .font-price{ font-weight:900; letter-spacing:-3px; }
 
     @media print{
-      /* Yazıcıyı her zaman A4 olarak kandırıyoruz */
       @page{ size: A4; margin: 0; }
-      
       html, body{ margin:0 !important; padding:0 !important; background:#fff !important; color:#000 !important; }
       .no-print{ display:none !important; }
       #previewArea, .print-area{ background:#fff !important; padding:0 !important; margin:0 !important; overflow:visible !important; display:block !important; }
       *, *:before, *:after{ box-shadow:none !important; text-shadow:none !important; filter:none !important; outline:none !important; }
       .fold-area{ background:#fff !important; }
       .multi-sheet{ box-shadow:none !important; background:#fff !important; }
-      .label-card, .strip-label{ box-shadow:none !important; background:transparent !important; margin:0 !important; }
-      .header-box, .content-box, .footer-info{ background:transparent !important; }
+      .label-card, .strip-label{ box-shadow:none !important; background:transparent !important; margin:0 !important; border:none !important; }
+      .header-box, .content-box, .footer-info{ background:transparent !important; border:none !important; }
       #previewArea{ background:transparent !important; }
       html, body{ -webkit-print-color-adjust: economy !important; print-color-adjust: economy !important; }
       
-      /* A5 YATAY (A5L) İÇİN ÖZEL DÖNDÜRME AYARI */
-      /* Tasarım DIKEY (148x210) hazırlanır, baskıda SOLA 90 derece yatırılır */
       .size-a5l {
         width: 148mm !important;
         height: 210mm !important;
-        
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
-        
-        /* 1. rotate(-90deg): Sola 90 derece çevir.
-           2. translateY(148mm): Çevrilince yukarı kaçan kısmı sayfaya geri indir.
-        */
         transform: translateY(148mm) rotate(-90deg) !important;
         transform-origin: top left !important;
-        
         margin: 0 !important;
         box-shadow: none !important;
         border: none !important;
         page-break-after: always;
       }
 
-      /* Diğer boyutlar */
       .size-a4 { width:210mm; height:297mm; }
-      .size-a5 { width:148mm; height:210mm; }
+      
+      /* A5 DIKEY İÇİN BASKI AYARI (3.5cm Boşluk) */
+      .size-a5 { 
+          width:148mm; 
+          height:210mm; 
+          /* Üst-Sağ-Sol 5mm, ALT 35mm (3.5cm) */
+          padding: 5mm 5mm 35mm 5mm !important; 
+      }
     }
 
     /* EKRAN GÖRÜNÜMÜ */
-    .label-card{ background:white; margin:auto; position:relative; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); box-sizing:border-box; align-items:center; color:black; }
+    .label-card{ background:white; margin:auto; position:relative; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 25px rgba(0,0,0,0.5); box-sizing:border-box; align-items:center; color:black; border:none; }
     
     .size-a4{ width:210mm; height:297mm; padding:10mm; }
-    .size-a5{ width:148mm; height:210mm; padding:5mm; }
     
-    /* Ekranda karışıklık olmasın diye A5L'yi de dikey gösteriyoruz (Baskıda dönecek) */
+    /* A5 DIKEY İÇİN EKRAN AYARI (3.5cm Boşluk) */
+    .size-a5{ 
+        width:148mm; 
+        height:210mm; 
+        /* Üst-Sağ-Sol 5mm, ALT 35mm (3.5cm) */
+        padding: 5mm 5mm 35mm 5mm !important; 
+    }
+    
     .size-a5l{ 
       width:148mm; 
       height:210mm; 
       padding:5mm; 
       margin: 30px auto; 
-      border: 2px dashed red; /* Ayırt edilsin diye kırmızı çerçeve */
+      border: 2px dashed red; 
     }
-    /* Ekranda uyarı yazısı */
     .size-a5l::before {
         content: "YAZICIDAN YATAY ÇIKACAK (SOLA DÖNÜK)";
         display: block; width: 100%; text-align: center; color: red; font-size: 10px; font-weight: bold; position: absolute; top: -20px; left: 0;
@@ -80,23 +81,28 @@
     .size-a3{ width:297mm; height:420mm; padding:15mm; }
     .size-shelf{ width:150mm; height:135mm; padding:0; }
 
-    .fold-area{ display:none; width:100%; height:35mm; background:#fff; border-bottom:2px dashed #000; align-items:center; justify-content:center; font-weight:bold; font-size:12px; flex-shrink:0; }
+    .fold-area{ display:none; width:100%; height:35mm; background:#fff; border-bottom:1px dashed #ccc; align-items:center; justify-content:center; font-weight:bold; font-size:12px; flex-shrink:0; }
     .size-shelf .fold-area{ display:flex; }
 
-    .header-box{ width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; border-bottom:4px solid #000; flex-shrink:0; text-align:center; overflow:hidden; padding:6px 10px; box-sizing:border-box; }
-    .content-box{ width:100%; flex:1; border:4px solid #000; border-radius:1.5rem; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:10px 0; position:relative; background:white; overflow:hidden; box-sizing:border-box; }
+    /* KENARLIKLAR VE ÇİZGİLER YOK */
+    .header-box{ width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; border-bottom:none; flex-shrink:0; text-align:center; overflow:hidden; padding:6px 10px; box-sizing:border-box; }
+    
+    .content-box{ width:100%; flex:1; border:none; border-radius:0; display:flex; flex-direction:column; align-items:center; justify-content:center; margin:10px 0; position:relative; background:white; overflow:hidden; box-sizing:border-box; }
 
     .price-row{ display:flex; align-items:flex-start; justify-content:center; line-height:0.75; }
     .price-left{ font-weight:900; letter-spacing:-4px; }
     .price-right{ display:flex; flex-direction:column; margin-left:10px; padding-top:12px; }
-    .kurus{ border-bottom:4px solid #000; margin-bottom:4px; line-height:1; }
+    
+    .kurus{ border-bottom:none; margin-bottom:4px; line-height:1; }
     .tl{ line-height:1; }
 
-    .footer-info{ width:100%; display:flex; justify-content:space-between; align-items:flex-end; margin-top:2px; padding-top:2px; border-top:2px solid #000; flex-shrink:0; gap:8px; box-sizing:border-box; }
-    .yerli-logo-box{ display:flex; align-items:center; border:2px solid black; border-radius:6px; padding:2px 6px; background:white; color:black; flex-shrink:0; }
+    .footer-info{ width:100%; display:flex; justify-content:space-between; align-items:flex-end; margin-top:2px; padding-top:2px; border-top:none; flex-shrink:0; gap:8px; box-sizing:border-box; }
+    
+    .yerli-logo-box{ display:flex; align-items:center; border:none; border-radius:6px; padding:2px 6px; background:white; color:black; flex-shrink:0; }
 
     .multi-sheet{ width:210mm; min-height:297mm; background:white; padding-top:5mm; display:flex; flex-direction:column; align-items:center; gap:5mm; box-shadow:0 0 15px rgba(0,0,0,0.5); margin:0 auto 20px auto; }
-    .strip-label{ width:200mm; height:92mm; border:2px solid #000; border-radius:10px; display:flex; box-sizing:border-box; overflow:hidden; background:white; }
+    
+    .strip-label{ width:200mm; height:92mm; border:none; border-radius:0; display:flex; box-sizing:border-box; overflow:hidden; background:white; }
     .strip-left{ flex:0 0 60%; max-width:60%; min-width:0; padding:10px 12px; display:flex; flex-direction:column; justify-content:space-between; }
     .strip-right{ flex:0 0 40%; max-width:40%; min-width:0; padding:10px 12px; display:flex; align-items:center; justify-content:center; }
 
@@ -106,8 +112,8 @@
     .btn-active{ background-color:white; color:black; border:2px solid white; }
     .btn-passive{ background-color:#374151; color:#9ca3af; border:2px solid #4b5563; }
 
-    .size-shelf .header-box{ border-bottom-width:3px; padding:4px 6px; }
-    .size-shelf .content-box{ flex:0 0 auto !important; height:62mm !important; margin:3px 0 !important; border-width:3px; border-radius:16px; padding:6px !important; justify-content:flex-start !important; }
+    .size-shelf .header-box{ border-bottom-width:0; padding:4px 6px; }
+    .size-shelf .content-box{ flex:0 0 auto !important; height:62mm !important; margin:3px 0 !important; border-width:0; border-radius:0; padding:6px !important; justify-content:flex-start !important; }
     .size-shelf .footer-info{ margin-top:1mm !important; padding-top:2px !important; padding-bottom:2mm !important; align-items:center !important; }
     .size-shelf .barcode-container { max-height: 40px; }
     .clamp-2{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
@@ -136,7 +142,7 @@
           <label class="text-xs font-bold text-gray-500 mb-2 block uppercase">Kağıt Boyutu</label>
           <div class="grid grid-cols-2 gap-2">
             <button onclick="setSize('size-a4', this)" class="size-btn btn-active w-full py-2 rounded font-bold">A4</button>
-            <button onclick="setSize('size-a5', this)" class="size-btn btn-passive w-full py-2 rounded font-bold">A5 DİKEY</button>
+            <button onclick="setSize('size-a5', this)" class="size-btn btn-active w-full py-2 rounded font-bold">A5 DİKEY</button>
             <button onclick="setSize('size-a5l', this)" class="size-btn btn-passive w-full py-2 rounded font-bold">A5 YATAY</button>
             <button onclick="setSize('size-a3', this)" class="size-btn btn-passive w-full py-2 rounded font-bold">A3</button>
             <button onclick="setSize('size-shelf', this)" class="size-btn btn-passive w-full py-2 rounded font-bold">RAF (15x13.5)</button>
@@ -188,7 +194,8 @@
     const client = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // --- DURUM YÖNETİMİ ---
-    let state = { mode:'single', size:'size-a4', campaign:'normal', queue:[], activeProduct:null };
+    // Varsayılan boyut 'size-a5' olarak ayarlandı
+    let state = { mode:'single', size:'size-a5', campaign:'normal', queue:[], activeProduct:null };
 
     function setMode(m){
       state.mode = m;
@@ -457,7 +464,6 @@
       
       if(sizeClass==='size-a4'){ headH=isCampaign?'190px':'180px'; titleClass='text-7xl'; subClass='text-2xl'; }
       
-      /* A5 YATAY DA ARTIK DIKEY GIBI DAVRANIYOR */
       if(sizeClass==='size-a5' || sizeClass==='size-a5l'){ 
           headH=isCampaign?'160px':'130px'; 
           titleClass='text-6xl'; 
@@ -528,7 +534,7 @@
 
       const yerliLogoHtml = isYerli
         ? `<div class="yerli-logo-box"><i class="fa-solid fa-handshake-simple text-xl mr-2"></i><div class="flex flex-col leading-none font-bold text-[10px]"><span>YERLİ</span><span>ÜRETİM</span></div></div>`
-        : `<div class="font-bold border-2 border-black px-2 rounded text-[10px]">MENŞEİ: ${uretimYeri}</div>`;
+        : `<div class="font-bold border border-black px-2 rounded text-[10px]">MENŞEİ: ${uretimYeri}</div>`;
 
       let urunSize = s.urun;
       if((sizeClass==='size-a5' || sizeClass==='size-a5l') && product.ad.length>38) urunSize='text-3xl';
@@ -547,7 +553,7 @@
       }
 
       let headerHtml = '';
-      if(sizeClass !== 'strip-label'){
+      if(sizeClass !== 'strip-label' && baslik !== "SATIŞ FİYATI"){
         const hf = headerFit(sizeClass, baslik, isCampaign);
         headerHtml = `
           <div class="header-box" style="height:${hf.headH}; background:${isCampaign?'black':'white'}; color:${isCampaign?'white':'black'}">
@@ -607,7 +613,7 @@
           <div class="strip-left">
              ${isCampaign 
                ? `<div class="bg-black text-white text-center py-2 rounded"><div class="font-black uppercase text-3xl tracking-tighter leading-none">${baslik}</div></div>`
-               : `<div class="border-b-2 border-black pb-1 text-center"><div class="font-black uppercase text-3xl tracking-tighter">SATIŞ FİYATI</div></div>`
+               : `` 
              }
              <div class="font-black text-black leading-tight uppercase text-4xl mt-2 clamp-2">${product.ad}</div>
              <div class="flex justify-between items-end mt-2">
