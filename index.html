@@ -443,7 +443,7 @@
                     fontSize: isShelf ? 12 : 14,
                     marginTop: 2,
                     fontOptions: "bold"
-                 });
+                  });
              } catch(e) { console.error(e); }
          }
       });
@@ -487,20 +487,37 @@
       let s = {};
 
       if(sizeClass === 'size-a5' || sizeClass === 'size-a5l') {
-          // A5: Logo 1.2cm, Barkod 0.7cm
-          // GÜNCELLEME: kdvMargin -10px ve line height ayarları ile metin yukarı çekildi.
-          s = {
-              urun: '55pt',
-              big: '90pt',
-              small: '45pt',
-              tl: '30pt',
-              logoH: '1.2cm',
-              info: '10pt',
-              barcodeH: '0.7cm',
-              kdvMargin: '-10px',
-              lhUrun: '0.9',
-              lhPrice: '0.8'
-          };
+          // A5 DİKEY - KAMPANYA VARSA PUNTOLARI KÜÇÜLT
+          if (isCampaign) {
+             s = {
+                  urun: '35pt', 
+                  big: '70pt',  
+                  small: '35pt',
+                  tl: '25pt',
+                  logoH: '1.0cm',
+                  info: '8pt',  
+                  barcodeH: '0.65cm', // Barkod biraz büyütüldü
+                  kdvMargin: '-2px', // GÜNCELLENDİ: -8px yerine -2px yapıldı.
+                  kdvSize: '7pt',    
+                  lhUrun: '1',
+                  lhPrice: '0.9' 
+             };
+          } else {
+             // KAMPANYA YOKSA (ESKİ AYARLAR)
+             s = {
+                  urun: '55pt',
+                  big: '90pt',
+                  small: '45pt',
+                  tl: '30pt',
+                  logoH: '1.2cm',
+                  info: '10pt',
+                  barcodeH: '0.7cm',
+                  kdvMargin: '-10px',
+                  kdvSize: '10pt', 
+                  lhUrun: '0.9',
+                  lhPrice: '0.8'
+              };
+          }
       } 
       else if (sizeClass === 'size-a4') {
           s = {
@@ -512,12 +529,13 @@
               info: '12pt',
               barcodeH: '1.0cm',
               kdvMargin: '0px',
+              kdvSize: '10pt',
               lhUrun: '1',
               lhPrice: '1'
           };
       }
       else if (sizeClass === 'size-a3') {
-          s = { urun:'100pt', big:'250pt', small:'100pt', tl:'60pt', logoH:'3cm', info:'16pt', barcodeH:'2.5cm', kdvMargin:'0px', lhUrun:'1', lhPrice:'1' };
+          s = { urun:'100pt', big:'250pt', small:'100pt', tl:'60pt', logoH:'3cm', info:'16pt', barcodeH:'2.5cm', kdvMargin:'0px', kdvSize:'12pt', lhUrun:'1', lhPrice:'1' };
       }
       else if (sizeClass === 'size-shelf') {
           // RAF ETİKETİ: Minimal
@@ -533,16 +551,17 @@
               barcodeH:'0.6cm',
               isShelf: true,
               kdvMargin: '0px',
+              kdvSize: '8px',
               lhUrun:'1',
               lhPrice:'0.8'
           };
       }
       else {
-          s = { urun:'20pt', big:'60pt', small:'30pt', tl:'16pt', logoH:'1cm', info:'8pt', barcodeH:'1cm', kdvMargin:'0px', lhUrun:'1', lhPrice:'1' };
+          s = { urun:'20pt', big:'60pt', small:'30pt', tl:'16pt', logoH:'1cm', info:'8pt', barcodeH:'1cm', kdvMargin:'0px', kdvSize:'8pt', lhUrun:'1', lhPrice:'1' };
       }
 
       // Şerit Etiket için
-      if(sizeClass === 'strip-label') return stripLabelGenerate(product, baslik, isCampaign, tam, kurus, isYerli, uretimYeri, satisFiyat, dinamikBirimText);
+      if(sizeClass === 'strip-label') return stripLabelGenerate(product, baslik, isCampaign, tam, kurus, isYerli, uretimYeri, satisFiyat, dinamikBirimText, normalFiyat);
 
       // --- HTML OLUŞTURMA ---
       
@@ -550,8 +569,8 @@
       if(isCampaign){
          headerHtml = `
           <div class="header-box w-full bg-black text-white p-2 mb-4">
-             <h1 class="font-black text-5xl leading-none uppercase tracking-tighter">${baslik}</h1>
-             ${altBaslik ? `<div class="text-xl mt-1 font-bold border border-white inline-block px-4 rounded-full">${altBaslik}</div>` : ''}
+              <h1 class="font-black text-5xl leading-none uppercase tracking-tighter">${baslik}</h1>
+              ${altBaslik ? `<div class="text-xl mt-1 font-bold border border-white inline-block px-4 rounded-full">${altBaslik}</div>` : ''}
           </div>`;
       }
 
@@ -572,7 +591,8 @@
       // KDV Yazısı
       const kdvText = 'K.D.V DAHİL FİYATTIR';
       // KDV marjını kullanarak yukarı çekme. line-height: 0.8 ile sıkıştırıldı.
-      const kdvHtml = `<div class="font-bold text-center whitespace-nowrap" style="font-size:${s.isShelf ? '8px' : '10pt'}; margin-top:${s.kdvMargin || '0px'}; line-height:0.8;">${kdvText}</div>`;
+      // DİKKAT: s.kdvSize burada devreye giriyor
+      const kdvHtml = `<div class="font-bold text-center whitespace-nowrap" style="font-size:${s.kdvSize || '10pt'}; margin-top:${s.kdvMargin || '0px'}; line-height:0.8;">${kdvText}</div>`;
 
       const bodyHtml = `
         <div class="content-box w-full bg-white flex flex-col items-center justify-center flex-1">
@@ -585,7 +605,7 @@
           ${isCampaign ? `<div class="text-3xl font-bold text-gray-400 line-through mb-2">${normalFiyat.toFixed(2)}</div>` : ''}
 
           <div class="price-row text-black items-baseline" style="line-height:${s.lhPrice};">
-            <span class="font-black leading-none" style="font-size:${s.big};">${tam},${kurus}</span>
+            <span class="font-black leading-none" style="font-size:${s.big};">${tam}.${kurus}</span>
             <span class="font-bold ml-2" style="font-size:calc(${s.big} * 0.5);">₺</span>
           </div>
           
@@ -621,7 +641,6 @@
     }
 
     // --- ŞERİT ETİKET ---
-    // HATAYI GİDERMEK İÇİN: normalFiyat argümanı eklendi
     function stripLabelGenerate(product, baslik, isCampaign, tam, kurus, isYerli, uretimYeri, satisFiyat, dinamikBirimText, normalFiyat){
        const el = document.createElement('div');
        el.className = 'strip-label';
@@ -636,25 +655,26 @@
 
        const bodyHtml = `
           <div class="strip-left">
-             ${isCampaign ? `<div class="bg-black text-white text-center py-1 font-bold text-xl">${baslik}</div>` : ``}
-             
-             <div class="font-black uppercase text-4xl leading-none clamp-2 mt-1 tracking-tight">${product.ad}</div>
-             
-             <div class="mt-auto flex justify-between items-end">
-                <div class="flex items-center gap-2">
-                    ${yerliHtml}
-                    <div class="text-[10px] font-bold text-left">
-                       <div>${product.tarih}</div>
-                       <div>${dinamikBirimText}</div>
-                    </div>
-                </div>
-             </div>
-             <div class="mt-1"><svg class="barcode-gen" jsbarcode-value="${product.barkod}" style="height:20px; width:auto;"></svg></div>
+              ${isCampaign ? `<div class="bg-black text-white text-center py-1 font-bold text-xl">${baslik}</div>` : ``}
+              
+              <div class="font-black uppercase text-4xl leading-none clamp-2 mt-1 tracking-tight">${product.ad}</div>
+              
+              <div class="mt-auto flex justify-between items-end">
+                 <div class="flex items-center gap-2">
+                     ${yerliHtml}
+                     <div class="text-[10px] font-bold text-left">
+                        <div>${product.tarih}</div>
+                        <div>${dinamikBirimText}</div>
+                     </div>
+                 </div>
+              </div>
+              <div class="mt-1"><svg class="barcode-gen" jsbarcode-value="${product.barkod}" style="height:20px; width:auto;"></svg></div>
           </div>
           <div class="strip-right">
              <div class="flex flex-col items-center">
+               ${isCampaign ? `<div class="text-xs font-bold text-gray-500 line-through mb-0">${normalFiyat ? normalFiyat.toFixed(2) : ""}</div>` : ''}
                <div class="price-row items-baseline" style="margin-right: 60px;">
-                 <span class="font-black leading-none" style="font-size:75px;">${tam},${kurus}</span>
+                 <span class="font-black leading-none" style="font-size:75px;">${tam}.${kurus}</span>
                  <span class="font-bold ml-1 text-4xl">₺</span>
                </div>
                <div class="text-[9px] font-bold mt-0 whitespace-nowrap" style="margin-right: 60px;">K.D.V DAHİL FİYATTIR</div>
