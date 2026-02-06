@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cepo Bulut Etiket</title>
+  <title>Cepo Bulut Etiket - Akıllı Şeker Modülü</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -147,6 +147,13 @@
           <div id="queueCount" class="text-right text-xs text-yellow-500 mt-2 hidden">Listede: 0 Ürün</div>
           <div id="errorMsg" class="text-red-500 text-xs font-bold mt-2 hidden"></div>
         </div>
+        
+        <div class="mt-2 border-t border-gray-700 pt-4">
+            <label class="text-xs font-bold text-gray-500 mb-2 block uppercase">HIZLI ÜRÜNLER</label>
+            <button onclick="hizliSekerBaslat()" class="w-full bg-yellow-500 hover:bg-yellow-400 text-black py-3 rounded font-black shadow-lg border-b-4 border-yellow-700 active:border-b-0 active:translate-y-1 flex items-center justify-center gap-2">
+              <i class="fa-solid fa-cube"></i> TOZ ŞEKER (DÖKME)
+            </button>
+        </div>
 
         <div>
           <label class="text-xs font-bold text-gray-500 mb-2 block uppercase">Kampanya Tipi</label>
@@ -172,6 +179,22 @@
     </div>
   </div>
 
+  <div id="weightModal" class="fixed inset-0 bg-black bg-opacity-80 z-[9999] hidden flex items-center justify-center backdrop-blur-sm">
+    <div class="bg-gray-800 border-2 border-gray-600 rounded-xl p-6 w-[90%] max-w-md shadow-2xl">
+      <h2 class="text-white text-2xl font-black text-center mb-2 uppercase tracking-wide">⚖️ Gramaj Seçiniz</h2>
+      <p id="modalProductName" class="text-gray-400 text-center text-sm mb-6 font-mono">TOZ ŞEKER</p>
+      
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="agirlikSec(1)" class="p-4 bg-white hover:bg-gray-200 text-black font-black text-xl rounded shadow-lg border-b-4 border-gray-400 active:border-b-0 active:translate-y-1">1 KG</button>
+        <button onclick="agirlikSec(2)" class="p-4 bg-white hover:bg-gray-200 text-black font-black text-xl rounded shadow-lg border-b-4 border-gray-400 active:border-b-0 active:translate-y-1">2 KG</button>
+        <button onclick="agirlikSec(3)" class="p-4 bg-white hover:bg-gray-200 text-black font-black text-xl rounded shadow-lg border-b-4 border-gray-400 active:border-b-0 active:translate-y-1">3 KG</button>
+        <button onclick="agirlikSec(5)" class="p-4 bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xl rounded shadow-lg border-b-4 border-yellow-600 active:border-b-0 active:translate-y-1">5 KG</button>
+      </div>
+  
+      <button onclick="closeWeightModal()" class="w-full mt-4 py-3 text-red-400 font-bold hover:bg-gray-700 rounded transition">İPTAL</button>
+    </div>
+  </div>
+
   <script>
     // --- SUPABASE & CLIENT ---
     const SUPABASE_URL = "https://asixtbjdsypmobadjyeh.supabase.co";
@@ -181,6 +204,7 @@
 
     // --- STATE ---
     let state = { mode:'single', size:'size-a4', campaign:'normal', queue:[], activeProduct:null };
+    let pendingProduct = null; // Bekleyen özel ürün
 
     function setMode(m){
       state.mode = m;
@@ -212,6 +236,32 @@
       if(state.mode==='single') render();
     }
 
+    // --- HIZLI BUTON (DB SORGULU) ---
+    async function hizliSekerBaslat() {
+        const err = document.getElementById('errorMsg');
+        err.classList.add('hidden');
+        
+        try {
+            // Veritabanından 2900500 barkodunu sorgula (Anlık fiyat için)
+            const { data, error } = await client.from('urunler').select('*').eq('barkod', '2900500').maybeSingle();
+            
+            if(error) throw error;
+            if(!data) {
+                alert("Veritabanında 2900500 barkodlu şeker ürünü bulunamadı! Lütfen önce ürünü tanımlayın.");
+                return;
+            }
+
+            // Ürünü hafızaya al ve pencereyi aç
+            pendingProduct = data;
+            document.getElementById('modalProductName').innerText = data.ad;
+            document.getElementById('weightModal').classList.remove('hidden');
+
+        } catch(e) {
+            console.error(e);
+            alert("Veritabanı bağlantı hatası! Fiyat çekilemedi.");
+        }
+    }
+
     async function urunIsle(){
       const input = document.getElementById('barkod');
       const err = document.getElementById('errorMsg');
@@ -230,6 +280,31 @@
            return;
         }
 
+        // --- ÖZEL BARKOD KONTROLÜ (2900500) ---
+        // Eğer okutulan barkod Şeker barkoduysa, modalı aç
+        if(data.barkod === '2900500') {
+            pendingProduct = data;
+            document.getElementById('modalProductName').innerText = data.ad;
+            document.getElementById('weightModal').classList.remove('hidden');
+            input.value = "";
+            return;
+        }
+
+        // Normal ürün ise standart işlem
+        urunEkle(data);
+
+        input.value="";
+        input.focus();
+        
+      } catch(e) {
+        console.error(e);
+        err.textContent = "Bağlantı hatası!";
+        err.classList.remove('hidden');
+      }
+    }
+
+    // Ürünü listeye veya ekrana işleyen yardımcı fonksiyon
+    function urunEkle(data) {
         const p = {
             barkod: data.barkod,
             ad: data.ad,
@@ -242,15 +317,52 @@
 
         if(state.mode==='single'){ state.activeProduct = p; }
         else { state.queue.push(p); updateQueueCount(); }
-
-        input.value="";
-        input.focus();
         render();
-      } catch(e) {
-        console.error(e);
-        err.textContent = "Bağlantı hatası!";
-        err.classList.remove('hidden');
-      }
+    }
+
+    // --- AGIRLIK SEÇME ve İSİM FORMATLAMA (DÜZENLENDİ) ---
+    function agirlikSec(kilo) {
+        if(!pendingProduct) return;
+
+        // Veritabanındaki "Kg Fiyatı"nı alıyoruz
+        const birimFiyat = parseFloat(pendingProduct.fiyat || 0);
+        
+        // Yeni satış fiyatını hesapla
+        const yeniFiyat = birimFiyat * kilo;
+
+        // İSİM BELİRLEME MANTIĞI:
+        // Eğer 1 Kg ise "TOZ ŞEKER KG"
+        // Eğer 1'den büyükse "TOZ ŞEKER 5 KG" vb.
+        let yeniAd = "";
+        if (kilo === 1) {
+            yeniAd = "TOZ ŞEKER KG";
+        } else {
+            yeniAd = `TOZ ŞEKER ${kilo} KG`;
+        }
+
+        // Ürün verisini manipüle ederek yeni bir nesne oluştur
+        const yeniUrunData = {
+            ...pendingProduct,
+            ad: yeniAd, 
+            fiyat: yeniFiyat,
+            gramaj: kilo,         
+            gramajTipi: 'KG',
+            birim: null // Otomatik hesaplansın diye temizliyoruz
+        };
+
+        // Ürünü sisteme işle
+        urunEkle(yeniUrunData);
+        
+        // Modalı kapat
+        closeWeightModal();
+        
+        // Inputa tekrar odaklan
+        document.getElementById('barkod').focus();
+    }
+
+    function closeWeightModal() {
+        document.getElementById('weightModal').classList.add('hidden');
+        pendingProduct = null;
     }
 
     function updateQueueCount(){
@@ -496,14 +608,14 @@
                   tl: '25pt',
                   logoH: '1.0cm',
                   info: '8pt',  
-                  barcodeH: '0.65cm', // Barkod biraz büyütüldü
-                  kdvMargin: '-2px', // GÜNCELLENDİ: -8px yerine -2px yapıldı.
+                  barcodeH: '0.65cm', 
+                  kdvMargin: '-2px', 
                   kdvSize: '7pt',    
                   lhUrun: '1',
                   lhPrice: '0.9' 
              };
           } else {
-             // KAMPANYA YOKSA (ESKİ AYARLAR)
+             // KAMPANYA YOKSA
              s = {
                   urun: '55pt',
                   big: '90pt',
@@ -590,8 +702,6 @@
 
       // KDV Yazısı
       const kdvText = 'K.D.V DAHİL FİYATTIR';
-      // KDV marjını kullanarak yukarı çekme. line-height: 0.8 ile sıkıştırıldı.
-      // DİKKAT: s.kdvSize burada devreye giriyor
       const kdvHtml = `<div class="font-bold text-center whitespace-nowrap" style="font-size:${s.kdvSize || '10pt'}; margin-top:${s.kdvMargin || '0px'}; line-height:0.8;">${kdvText}</div>`;
 
       const bodyHtml = `
